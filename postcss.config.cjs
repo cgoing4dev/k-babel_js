@@ -11,3 +11,7 @@ const config = {
 };
 
 module.exports = config;
+
+// module.exports = {
+// 	plugins: [require('tailwindcss'), require('autoprefixer')]
+// };

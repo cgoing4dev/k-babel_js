@@ -5,8 +5,13 @@
 	import { Navbar, NavBrand, Button } from 'flowbite-svelte';
 	import { Avatar, Dropdown, DropdownItem, DropdownDivider } from 'flowbite-svelte';
 	import { Modal, A } from 'flowbite-svelte';
+	import { Icon, Bars3 } from 'svelte-hero-icons';
 
 	import { avatarSrcStore } from '$lib/store';
+	import { sideNavMenu } from '$lib/etc/navMenu';
+
+	import { page } from '$app/stores';
+	$: activeUrl = $page.url.pathname;
 
 	export let data;
 
@@ -14,19 +19,35 @@
 	let loginModal = false;
 	$: authButtonTxt = loginModal ? 'Log in with Google' : 'Sign up with Google';
 
+	// 로그인한 유저의 아바타 사진
 	$: $avatarSrcStore = data.user?.avatar
 		? getImageURL(data.user?.collectionId, data.user?.id, data.user?.avatar)
 		: data.user?.avatarUrl;
+
+	// 반응형 구현하기 위해 폭을 파악하기 위해 임시로 내비게이션에 띄우는 용도
+	let width = 0;
+
+	import { Drawer, CloseButton } from 'flowbite-svelte';
+	import { sineIn, linear } from 'svelte/easing';
+
+	let drawerHidden = true;
+	let transitionParams = {
+		x: -320,
+		duration: 30,
+		easing: linear
+	};
 </script>
+
+<svelte:window bind:innerWidth={width} />
 
 <Modal bind:open={formModal} size="xs" class="w-full" outsideclose>
 	<div class="flex flex-col space-y-10">
 		<span
 			class="font-['Audiowide'] text-center text-3xl font-medium text-purple-500 dark:text-white"
 		>
-			K-Babel
+			K-Talk
 		</span>
-		<span class="text-center text-2xl text-black font-medium">K-Babel은 이런 공간이에요.</span>
+		<span class="text-center text-2xl text-black font-medium">K-Talk는 이런 공간이에요.</span>
 		<Button href="/api/googleAuth" outline color="purple" class="rounded-3xl w-full">
 			<svg
 				width="20px"
@@ -77,20 +98,41 @@
 	</div>
 </Modal>
 
-<Navbar let:hidden let:toggle class="sticky top-0 z-30 py-1">
-	<NavBrand href="/">
-		<!-- <img src="/images/logo.svg" class="mr-3 h-6 sm:h-9" alt="Logo" />
-				<img src="/images/K-babel_text.png" class="mr-3 h-6 sm:h-9" alt="Logo" /> -->
-		<span
-			class="font-['Audiowide'] self-center whitespace-nowrap text-2xl font-semibold dark:text-white"
-		>
-			K-Babel
-		</span>
-	</NavBrand>
+<Navbar let:hidden let:toggle class="sticky top-0 z-30 py-1 border-b">
+	<div class="flex gap-4">
+		<div class="md:hidden">
+			<button
+				class="hover:bg-gray-300 rounded-md p-1"
+				on:click={() => (drawerHidden = !drawerHidden)}
+			>
+				<Icon src={Bars3} class="md:hidden" size="32" />
+			</button>
+		</div>
+		<NavBrand href="/">
+			<span class="font-['Audiowide'] text-2xl"> K-Babel </span>
+		</NavBrand>
+	</div>
+	<div>
+		<span>{width} px</span>
+		{#if width >= 1536}
+			<span>(2xl)</span>
+		{:else if width >= 1280}
+			<span>(xl)</span>
+		{:else if width >= 1024}
+			<span>(lg)</span>
+		{:else if width >= 768}
+			<span>(md)</span>
+		{:else if width >= 640}
+			<span>(sm)</span>
+		{:else if width < 640}
+			<span>(폰)</span>
+		{/if}
+	</div>
+
 	<div>
 		{#if data.user}
 			<div class="flex space-x-4 items-center">
-				<Button href="/new" outline pill size="sm">Create Post</Button>
+				<Button href="/new" pill size="sm">Create Post</Button>
 				<Avatar
 					id="user-drop"
 					src={$avatarSrcStore}
@@ -108,7 +150,6 @@
 					<DropdownDivider />
 					<DropdownItem href="/dashboard">Dashboard</DropdownItem>
 					<DropdownItem href="/settings">Settings</DropdownItem>
-					<DropdownItem href="/readinglist">Reading list</DropdownItem>
 					<DropdownDivider />
 					<DropdownItem href="/api/logout">Log out</DropdownItem>
 				</Dropdown>
@@ -138,6 +179,35 @@
 	</div>
 </Navbar>
 
-<div class="xl:container xl:mx-auto">
+<div class="lg:container lg:mx-auto h-screen">
 	<slot />
 </div>
+
+<Drawer transitionType="fly" {transitionParams} bind:hidden={drawerHidden} class="z-50">
+	<div class="flex items-center">
+		<h5
+			class="inline-flex items-center mb-4 text-base font-semibold text-gray-500 dark:text-gray-400"
+		>
+			Info
+		</h5>
+		<CloseButton on:click={() => (drawerHidden = true)} class="mb-4 dark:text-white" />
+	</div>
+	<ul class="space-y-2 text-md p-2">
+		{#each sideNavMenu as navItem}
+			<a href={navItem.href} on:click={() => (drawerHidden = true)}>
+				<li
+					class="hover:bg-gray-100 hover:rounded-md p-2 {activeUrl === navItem.href
+						? 'bg-gray-100 rounded-md'
+						: ''}"
+				>
+					<span>
+						{navItem.icon}
+					</span>
+					<span class="ml-2">
+						{navItem.title}
+					</span>
+				</li>
+			</a>
+		{/each}
+	</ul>
+</Drawer>

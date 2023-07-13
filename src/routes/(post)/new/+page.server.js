@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 
 export const load = async ({ locals }) => {
 	if (!locals.pb.authStore.isValid) {
-		throw redirect(303, '/auth/login');
+		throw redirect(303, '/');
 	}
 };
 
@@ -24,7 +24,11 @@ export const actions = {
 
 		// formData 저장
 		try {
-			await locals.pb.collection('post').create(formData);
+			const post = await locals.pb.collection('post').create(formData);
+			await locals.pb.collection('post_hits').create({
+				post: post.id,
+				hits: 0
+			});
 		} catch (err) {
 			console.log('Error: ', err);
 			return fail(400, { err: '에러 발생' });
